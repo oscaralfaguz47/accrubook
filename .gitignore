@@ -1,8 +1,25 @@
 # Environment & secrets
 .env
+.env.*
+!.env.example
 
 # Python
 __pycache__/
 *.py[cod]
 .venv/
-EOF
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+staticfiles/
+*.sqlite3
+
+# Node
+node_modules/
+dist/
+
+# Editors & OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
