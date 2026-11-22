@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     # Local apps
     "core",
+    "currencies",
 ]
 
 MIDDLEWARE = [
@@ -93,7 +94,7 @@ STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 
-# --- Django REST Framework --------------------------------------------------
+# --- Django REST Framework (DRF) --------------------------------------------------
 
 REST_FRAMEWORK = {
     # Secure by default: every endpoint requires an authenticated user
