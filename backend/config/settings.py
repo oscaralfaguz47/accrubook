@@ -109,6 +109,8 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 50,
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Every API error uses RFC 9457 Problem Details (see core/errors.py).
+    "EXCEPTION_HANDLER": "core.errors.problem_details_exception_handler",
 }
 
 SPECTACULAR_SETTINGS = {
