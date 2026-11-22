@@ -117,4 +117,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": "1.0.0",
     # Don't list the /api/schema/ endpoint inside its own schema.
     "SERVE_INCLUDE_SCHEMA": False,
+    # Strip the version prefix so tags/operation IDs read "currencies", not "v1".
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
 }
