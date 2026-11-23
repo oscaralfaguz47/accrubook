@@ -41,6 +41,10 @@ makemigrations: ## Create new migrations from model changes (and format them)
 	$(BACKEND) python manage.py makemigrations
 	$(BACKEND) ruff format .
 
+.PHONY: schema
+schema: ## Regenerate backend/openapi.yaml (the API contract) from the code
+	docker compose exec backend python manage.py spectacular --file openapi.yaml --validate --fail-on-warn
+
 superuser: ## Create a Django admin superuser
 	$(BACKEND) python manage.py createsuperuser
 
