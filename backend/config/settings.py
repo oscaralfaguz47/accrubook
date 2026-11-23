@@ -28,12 +28,14 @@ INSTALLED_APPS = [
     # Third-party apps
     "rest_framework",
     "drf_spectacular",
+    "corsheaders",
     # Local apps
     "core",
     "currencies",
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
@@ -122,3 +124,10 @@ SPECTACULAR_SETTINGS = {
     # Strip the version prefix so tags/operation IDs read "currencies", not "v1".
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
 }
+
+
+# --- CORS -------------------------------------------------------------------
+# Browsers block cross-origin calls unless the API allows the caller's origin.
+# Secure by default: no origins allowed unless listed in the environment.
+CORS_ALLOWED_ORIGINS = env_list("CORS_ALLOWED_ORIGINS")
+CORS_URLS_REGEX = r"^/api/.*$"
