@@ -3,8 +3,10 @@
 COMPOSE := docker compose
 BACKEND := $(COMPOSE) exec backend
 FRONTEND := npm --prefix frontend
+OPENAPI_TOOL := npm --prefix frontend/tools/openapi-typescript
 
-.PHONY: help setup up down restart logs ps migrate makemigrations superuser shell test lint format check frontend-install frontend-dev frontend-check
+.PHONY: help setup up down restart logs ps migrate makemigrations schema api-types superuser shell test lint format check frontend-install frontend-dev frontend-check
+
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## ' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-16s\033[0m %s\n", $$1, $$2}'
@@ -14,7 +16,7 @@ help: ## Show available commands
 setup: ## First-time setup: create .env (if missing), build images, install frontend deps
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
 	$(COMPOSE) build
-	$(FRONTEND) ci
+	$(MAKE) frontend-install
 
 up: ## Start all services in the background
 	$(COMPOSE) up -d
@@ -41,9 +43,11 @@ makemigrations: ## Create new migrations from model changes (and format them)
 	$(BACKEND) python manage.py makemigrations
 	$(BACKEND) ruff format .
 
-.PHONY: schema
 schema: ## Regenerate backend/openapi.yaml (the API contract) from the code
-	docker compose exec backend python manage.py spectacular --file openapi.yaml --validate --fail-on-warn
+	$(BACKEND) python manage.py spectacular --file openapi.yaml --validate --fail-on-warn
+
+api-types: schema ## Regenerate the API contract and the frontend types in one step
+	$(FRONTEND) run generate:api
 
 superuser: ## Create a Django admin superuser
 	$(BACKEND) python manage.py createsuperuser
@@ -71,9 +75,11 @@ check: lint test frontend-check ## Run everything CI runs (backend + frontend)
 
 frontend-install: ## Install frontend deps exactly as in package-lock.json
 	$(FRONTEND) ci
+	$(OPENAPI_TOOL) ci
 
 frontend-dev: ## Start the Vite dev server (http://localhost:5173)
 	$(FRONTEND) run dev
 
-frontend-check: ## Lint, format check and type check the frontend
+frontend-check: ## Check API types are up to date, then lint, format and type check
 	$(FRONTEND) run check
+
