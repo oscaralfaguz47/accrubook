@@ -149,3 +149,9 @@ Built as vertical slices, each one deployed to production:
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md).
+
+## API
+
+- Interactive docs (Swagger UI): http://127.0.0.1:8000/api/docs/
+- OpenAPI 3 schema: http://127.0.0.1:8000/api/schema/
+- Conventions (versioning, errors, pagination): [ADR 0004](docs/adr/0004-api-conventions.md)
