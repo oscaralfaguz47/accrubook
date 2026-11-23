@@ -25,8 +25,12 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    # Third-party apps
+    "rest_framework",
+    "drf_spectacular",
     # Local apps
     "core",
+    "currencies",
 ]
 
 MIDDLEWARE = [
@@ -88,3 +92,33 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+
+
+# --- Django REST Framework (DRF) --------------------------------------------------
+
+REST_FRAMEWORK = {
+    # Secure by default: every endpoint requires an authenticated user
+    # unless the view explicitly opts out (e.g. permission_classes = [AllowAny]).
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    # No authentication backends yet; JWT is added in Slice 1.
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
+    # JSON in, JSON out. No browsable API: Swagger UI covers interactive docs.
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
+    # Paginate every list from day one; adding it later is a breaking change.
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 50,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Every API error uses RFC 9457 Problem Details (see core/errors.py).
+    "EXCEPTION_HANDLER": "core.errors.problem_details_exception_handler",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Accrubook API",
+    "DESCRIPTION": "Finance operations API for professional services firms.",
+    "VERSION": "1.0.0",
+    # Don't list the /api/schema/ endpoint inside its own schema.
+    "SERVE_INCLUDE_SCHEMA": False,
+    # Strip the version prefix so tags/operation IDs read "currencies", not "v1".
+    "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+}
