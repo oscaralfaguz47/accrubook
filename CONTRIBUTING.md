@@ -33,6 +33,14 @@ A change is done when:
 - [ ] Docs (README / ADR) are updated if behavior or architecture changed
 - [ ] It is deployed and verified in production
 
+- [ ] If you changed the API (serializers, views, URLs), you ran `make api-types` and committed
+      `backend/openapi.yaml` and `frontend/src/api/schema.d.ts`.
+- [ ] New frontend data fetching uses TanStack Query (`queryOptions` in the feature's
+      `queries.ts`), never `useEffect`.
+- [ ] Components that load data are tested in their loading, error, empty and success states,
+      with MSW for the network (no module mocks).
+- [ ] UI uses native HTML elements before ARIA roles, and errors are announced (`role="alert"`).
+
 ## Code guidelines
 
 - Business logic lives in service modules, not in views or serializers.
