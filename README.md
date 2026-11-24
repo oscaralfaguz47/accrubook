@@ -139,7 +139,7 @@ All configuration comes from environment variables ([12-factor](https://12factor
 
 Built as vertical slices, each one deployed to production:
 
-- [ ] **Slice 0:** walking skeleton (backend, frontend, CI, deploy)
+- [x] **Slice 0:** walking skeleton (backend, frontend, CI, deploy)
 - [ ] **Slice 1:** tenants and authentication (JWT)
 - [ ] **Slice 2:** legal entities, clients and projects
 - [ ] **Slice 3:** consultants and effective-dated rate cards
