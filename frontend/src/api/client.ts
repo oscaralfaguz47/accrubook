@@ -7,4 +7,9 @@ import createClient from 'openapi-fetch'
 import { config } from '../config'
 import type { paths } from './schema'
 
-export const apiClient = createClient<paths>({ baseUrl: config.apiBaseUrl })
+export const apiClient = createClient<paths>({
+  baseUrl: config.apiBaseUrl,
+  // Look up fetch on every call instead of saving it once at import time,
+  // so anything that replaces globalThis.fetch later (MSW in tests) is respected.
+  fetch: (request) => globalThis.fetch(request),
+})
