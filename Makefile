@@ -5,7 +5,7 @@ BACKEND := $(COMPOSE) exec backend
 FRONTEND := npm --prefix frontend
 OPENAPI_TOOL := npm --prefix frontend/tools/openapi-typescript
 
-.PHONY: help setup up down restart logs ps migrate makemigrations schema api-types superuser shell test lint format check frontend-install frontend-dev frontend-check
+.PHONY: help setup up down restart logs ps migrate makemigrations schema api-types superuser shell test lint format check frontend-install frontend-dev frontend-check frontend-test
 
 
 help: ## Show available commands
@@ -69,7 +69,7 @@ format: ## Auto-fix lint issues and format code (backend + frontend)
 	$(BACKEND) ruff format .
 	$(FRONTEND) run format
 
-check: lint test frontend-check ## Run everything CI runs (backend + frontend)
+check: lint test frontend-check frontend-test ## Run everything CI runs (backend + frontend)
 
 # --- Frontend ---------------------------------------------------------------
 
@@ -82,4 +82,7 @@ frontend-dev: ## Start the Vite dev server (http://localhost:5173)
 
 frontend-check: ## Check API types are up to date, then lint, format and type check
 	$(FRONTEND) run check
+
+frontend-test: ## Run the frontend test suite (Vitest)
+	$(FRONTEND) test
 
