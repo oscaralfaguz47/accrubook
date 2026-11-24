@@ -1,0 +1,100 @@
+openapi: 3.0.3
+info:
+  title: Accrubook API
+  version: 1.0.0
+  description: Finance operations API for professional services firms.
+paths:
+  /api/v1/currencies/:
+    get:
+      operationId: currencies_list
+      description: 'ISO 4217 currencies: public reference data, read-only.'
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - currencies
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCurrencyList'
+          description: ''
+  /api/v1/currencies/{code}/:
+    get:
+      operationId: currencies_retrieve
+      description: 'ISO 4217 currencies: public reference data, read-only.'
+      parameters:
+      - in: path
+        name: code
+        schema:
+          type: string
+          description: ISO 4217 alphabetic code, e.g. USD.
+        required: true
+      tags:
+      - currencies
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Currency'
+          description: ''
+components:
+  schemas:
+    Currency:
+      type: object
+      properties:
+        code:
+          type: string
+          readOnly: true
+          description: ISO 4217 alphabetic code, e.g. USD.
+        name:
+          type: string
+          readOnly: true
+          description: English name, e.g. US Dollar.
+        decimal_places:
+          type: integer
+          readOnly: true
+          description: 'Digits after the decimal point: 2 for USD, 0 for JPY, 3 for
+            KWD.'
+        is_active:
+          type: boolean
+          readOnly: true
+          description: Retired currencies are deactivated, never deleted.
+      required:
+      - code
+      - decimal_places
+      - is_active
+      - name
+    PaginatedCurrencyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Currency'

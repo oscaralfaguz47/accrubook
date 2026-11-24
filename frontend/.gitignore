@@ -1,0 +1,11 @@
+# Dependencies (reinstalled from package-lock.json)
+node_modules/
+
+# Build output
+dist/
+
+# Local-only env files (e.g. .env.local), never committed
+*.local
+
+# Logs
+*.log
