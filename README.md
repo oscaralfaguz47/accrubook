@@ -1,5 +1,7 @@
 # Accrubook
 
+[![CI](https://github.com/oscaralfaguz47/accrubook/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/oscaralfaguz47/accrubook/actions/workflows/ci.yml?query=branch%3Amain)
+
 Multi-tenant finance operations platform for consultancies: from approved hours to consultant payouts, client invoices and double-entry journals.
 
 > **Status:** early development (walking skeleton). See the [roadmap](#roadmap).
@@ -139,7 +141,11 @@ All configuration comes from environment variables ([12-factor](https://12factor
 
 Built as vertical slices, each one deployed to production:
 
-- [x] **Slice 0:** walking skeleton (backend, frontend, CI, deploy)
+- [ ] **Slice 0:** walking skeleton
+  - [x] Backend: Django API, PostgreSQL, Docker Compose
+  - [x] Frontend: React + TypeScript + Vite
+  - [x] CI and quality gates: GitHub Actions, pre-commit, Dependabot, protected `main`
+  - [ ] Deploy: Railway (API), Neon (PostgreSQL), Cloudflare Pages (frontend)
 - [ ] **Slice 1:** tenants and authentication (JWT)
 - [ ] **Slice 2:** legal entities, clients and projects
 - [ ] **Slice 3:** consultants and effective-dated rate cards
