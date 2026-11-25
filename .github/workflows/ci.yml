@@ -50,3 +50,35 @@ jobs:
       - name: Show service logs
         if: failure()
         run: docker compose logs --no-color
+
+  # Runs every pre-commit hook on all files, so a commit made with
+  # --no-verify (or without `make hooks`) cannot reach main unchecked.
+  pre-commit:
+    name: pre-commit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up uv (same version as backend/Dockerfile)
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          version: "0.11.32"
+
+      - name: Set up Node (version from frontend/.nvmrc)
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: |
+            frontend/package-lock.json
+            frontend/tools/openapi-typescript/package-lock.json
+
+      - name: Install frontend deps (Prettier and oxlint for the hooks)
+        run: make frontend-install
+
+      - name: Run every hook on all files
+        run: make precommit
