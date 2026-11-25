@@ -24,3 +24,7 @@ dist/
 !.vscode/extensions.json
 .idea/
 .DS_Store
+
+# Claude Code: personal files, never committed
+CLAUDE.local.md
+.claude/settings.local.json
