@@ -1,0 +1,58 @@
+# Fast checks that run on `git commit`, only on the files being committed.
+# Slow checks (type check, tests) stay in CI, which runs `make check`.
+# Install the hook once per clone with: make hooks
+default_install_hook_types: [pre-commit]
+
+# Generated files: never edit them by hand, not even whitespace.
+exclude: ^(backend/openapi\.yaml|frontend/src/api/schema\.d\.ts)$
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: 3e8a8703264a2f4a69428a0aa4dcb512790b2c8c # frozen: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+        args: [--markdown-linebreak-ext=md]
+      - id: end-of-file-fixer
+      - id: mixed-line-ending
+        args: [--fix=lf]
+      - id: check-yaml
+      - id: check-toml
+      - id: check-merge-conflict
+      - id: check-case-conflict
+      - id: check-added-large-files
+        args: [--maxkb=500]
+      - id: detect-private-key
+
+  # Local hooks run the tool versions already locked in uv.lock and
+  # package-lock.json, so there is only one version of each tool to maintain.
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff check (backend)
+        entry: uv run --project backend --frozen ruff check --fix --force-exclude
+        language: system
+        types_or: [python, pyi]
+        files: ^backend/
+        require_serial: true
+
+      - id: ruff-format
+        name: ruff format (backend)
+        entry: uv run --project backend --frozen ruff format --force-exclude
+        language: system
+        types_or: [python, pyi]
+        files: ^backend/
+        require_serial: true
+
+      - id: prettier
+        name: prettier (frontend)
+        entry: frontend/node_modules/.bin/prettier --write --ignore-unknown --ignore-path frontend/.prettierignore
+        language: system
+        types: [text]
+        files: ^frontend/
+
+      - id: oxlint
+        name: oxlint (frontend)
+        entry: npm --prefix frontend run --silent lint
+        language: system
+        files: ^frontend/.*\.(js|jsx|ts|tsx|mjs|cjs)$
+        pass_filenames: false

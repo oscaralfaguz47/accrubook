@@ -25,6 +25,12 @@ services:
         INSTALL_DEV: "true"
     command: python manage.py runserver 0.0.0.0:8000
     env_file: .env
+    environment:
+      # Tool caches live outside the bind mount. In CI the mounted code belongs to
+      # the runner user (uid 1001), not to `app` (uid 1000), and Ruff exits with an
+      # error when it cannot write its cache.
+      RUFF_CACHE_DIR: /tmp/ruff-cache
+      PYTEST_ADDOPTS: -o cache_dir=/tmp/pytest-cache
     ports:
       - "127.0.0.1:8000:8000"
     volumes:

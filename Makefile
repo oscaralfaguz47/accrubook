@@ -4,8 +4,9 @@ COMPOSE := docker compose
 BACKEND := $(COMPOSE) exec backend
 FRONTEND := npm --prefix frontend
 OPENAPI_TOOL := npm --prefix frontend/tools/openapi-typescript
+PRE_COMMIT := uv run --project backend --frozen pre-commit
 
-.PHONY: help setup up down restart logs ps migrate makemigrations schema api-types superuser shell test lint format check frontend-install frontend-dev frontend-check frontend-test
+.PHONY: help setup hooks precommit up down restart logs ps migrate makemigrations schema api-types superuser shell test lint format check frontend-install frontend-dev frontend-check frontend-test
 
 
 help: ## Show available commands
@@ -17,6 +18,9 @@ setup: ## First-time setup: create .env (if missing), build images, install fron
 	@test -f .env || (cp .env.example .env && echo "Created .env from .env.example")
 	$(COMPOSE) build
 	$(MAKE) frontend-install
+
+hooks: ## Install the git pre-commit hook (once per clone, needs uv on the host)
+	$(PRE_COMMIT) install
 
 up: ## Start all services in the background
 	$(COMPOSE) up -d
@@ -69,6 +73,9 @@ format: ## Auto-fix lint issues and format code (backend + frontend)
 	$(BACKEND) ruff format .
 	$(FRONTEND) run format
 
+precommit: ## Run every pre-commit hook on all files (not just staged ones)
+	$(PRE_COMMIT) run --all-files
+
 check: lint test frontend-check frontend-test ## Run everything CI runs (backend + frontend)
 
 # --- Frontend ---------------------------------------------------------------
@@ -85,4 +92,3 @@ frontend-check: ## Check API types are up to date, then lint, format and type ch
 
 frontend-test: ## Run the frontend test suite (Vitest)
 	$(FRONTEND) test
-

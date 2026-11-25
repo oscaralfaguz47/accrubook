@@ -1,0 +1,111 @@
+# Dependabot opens PRs to keep dependencies current. Each PR runs CI like any
+# other change, so an update is only merged when `make check` is green.
+version: 2
+
+updates:
+  # Actions used by the CI workflows (pinned to commit SHAs).
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      github-actions:
+        patterns: ["*"]
+    commit-message:
+      prefix: ci
+
+  # Backend Python dependencies (uv.lock).
+  - package-ecosystem: uv
+    directory: /backend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      backend-minor-and-patch:
+        update-types: [minor, patch]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Frontend app dependencies.
+  - package-ecosystem: npm
+    directory: /frontend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      frontend-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # @types/node follows the Node major in .nvmrc, not the latest release.
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Isolated openapi-typescript tool (see ADR 0005).
+  - package-ecosystem: npm
+    directory: /frontend/tools/openapi-typescript
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      openapi-tool-minor-and-patch:
+        update-types: [minor, patch]
+    ignore:
+      # The tool needs TypeScript 5 until openapi-typescript supports TS 7 (ADR 0005).
+      - dependency-name: typescript
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Base images in backend/Dockerfile (python, uv).
+  - package-ecosystem: docker
+    directory: /backend
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      # Upgrading Python is a deliberate decision, not a routine bump.
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Service images in docker-compose.yml (postgres).
+  - package-ecosystem: docker-compose
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    ignore:
+      # A Postgres major upgrade needs a data migration, so it is planned by hand.
+      - dependency-name: postgres
+        update-types: ["version-update:semver-major"]
+    commit-message:
+      prefix: chore
+      include: scope
+
+  # Hook repositories in .pre-commit-config.yaml (pinned to commit SHAs).
+  - package-ecosystem: pre-commit
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      pre-commit-hooks:
+        patterns: ["*"]
+    commit-message:
+      prefix: chore
+      include: scope
