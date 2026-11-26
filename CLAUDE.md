@@ -29,7 +29,8 @@ is bind-mounted at `/app`. The frontend runs on the host with Node 26 (`frontend
 ## Stack
 
 - Backend: Python 3.13, Django 5.2 LTS, Django REST Framework, drf-spectacular, PostgreSQL 17,
-  uv (`uv.lock` committed), Ruff, pytest + pytest-django, gunicorn.
+  uv 0.13.x (`required-version` in `backend/pyproject.toml`, exact pin in `backend/Dockerfile`;
+  `uv.lock` committed), Ruff, pytest + pytest-django, gunicorn.
 - Frontend: Node 26, npm (`package-lock.json` committed), Vite 8, React 19, TypeScript 7
   (`strict`, `noUncheckedIndexedAccess`), TanStack Query 5, openapi-fetch, oxlint,
   Prettier 3.10.1 (exact), Vitest, Testing Library, MSW 3.
@@ -37,6 +38,9 @@ is bind-mounted at `/app`. The frontend runs on the host with Node 26 (`frontend
 
 ## Backend conventions
 
+- The backend is a virtual uv project (`package = false`): uv installs its dependencies, never the
+  project itself. The image builds with `uv sync --locked`, so a `uv.lock` out of date with
+  `pyproject.toml` fails the build. Moving to uv 0.14 is a deliberate upgrade (ADR 0006).
 - Configuration comes only from environment variables, read through `config/env.py`, and fails
   fast when a required value is missing. There is one `settings.py`.
 - Ruff rules: E, F, I, B, UP, DJ, S, SIM; line length 100.
@@ -78,7 +82,8 @@ is bind-mounted at `/app`. The frontend runs on the host with Node 26 (`frontend
   same Docker Compose stack used locally.
 - GitHub Actions and pre-commit hook repositories are pinned to full commit SHAs with a
   `# vX.Y.Z` comment. Dependabot proposes updates weekly with a 7-day cooldown; deliberate upgrades
-  (Python, PostgreSQL major, TypeScript in the isolated tool) are excluded on purpose.
+  (Python minor and major, Django and PostgreSQL major, `@types/node` major, TypeScript major in
+  the isolated tool) are excluded on purpose.
 - Never edit generated files by hand: `backend/openapi.yaml`, `frontend/src/api/schema.d.ts`.
 - Tests must not write inside `backend/` (use `tmp_path`): in CI the mounted code belongs to a
   different user (uid 1001) than the container user (uid 1000).
