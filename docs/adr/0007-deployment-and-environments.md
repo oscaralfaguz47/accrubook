@@ -4,6 +4,7 @@
 - **Date:** 2026-11-26
 - **Related:** ADR 0002 (hosting), ADR 0003 (sync Django), ADR 0005 (frontend, isolated tools),
   ADR 0006 (CI and quality gates)
+- **Spike:** Railway project `accrubook-spike`, deleted after the spike
 
 ## Context
 
@@ -25,6 +26,21 @@ Six facts, checked against the providers' documentation on 2026-11-26, shaped th
 6. **A Cloudflare Pages apex domain requires the zone on Cloudflare.** The registrar
    (Vercel) can stay; only the nameservers move.
 
+A spike on Railway (project `accrubook-spike`) added six more facts:
+
+7. **A prebuilt image can be promoted.** The same image was deployed to a second environment
+   without Railway rebuilding it.
+8. **`railway config plan` ignores region changes.** A service's region is fixed when the
+   service is created; editing it in `railway.ts` shows no change in the plan.
+9. **The Free plan forces serverless.** Every service sleeps when idle. On Hobby,
+   `sleepApplication` can be set per environment.
+10. **The SDK file is an ES module.** `infra/railway/package.json` needs `"type": "module"`, and
+    any machine that runs the Railway CLI with it needs Node.
+11. **Variables managed in Railway need `preserve()`.** A variable set in Railway, not in
+    `railway.ts`, must still be declared in the file with `preserve()`.
+12. **Containers see the host's CPUs.** Inside a Railway container the CPU count is 48, so a
+    value derived from it scales with the host, not with the service.
+
 ## Decision
 
 ### Two environments: staging and production
@@ -37,6 +53,7 @@ Six facts, checked against the providers' documentation on 2026-11-26, shaped th
 | Neon     | project `accrubook-staging`      | project `accrubook-prod`   |
 | Database | PostgreSQL 17                    | PostgreSQL 17              |
 | Region   | US East (Virginia)               | US East (Virginia)         |
+| Sleep    | on                               | off                        |
 
 - Both environments run the same code and image; they differ only in environment variables
   (`config/env.py`). There is no environment branch: everything ships from `main`.
@@ -46,6 +63,11 @@ Six facts, checked against the providers' documentation on 2026-11-26, shaped th
   deliberate, separate change.
 - Railway and Neon run in the same region to keep query latency low. Neon regions cannot be
   changed after creation.
+- Each Railway service gets its region when it is created, because `railway config plan` ignores
+  region changes (fact 8). CI reads the region from the deployment record and fails when it is
+  not the one in the table.
+- Sleep is explicit per environment (fact 9): `sleepApplication` is `false` in production and
+  `true` in staging. Production needs the Hobby plan, because Free forces every service to sleep.
 
 ### Build once, promote the same image
 
@@ -83,11 +105,19 @@ Rollback means deploying a previous digest. This is only safe because of the nex
 - The Railway project is described in `infra/railway/railway.ts` and applied with the Railway
   CLI. The SDK is an isolated tool with its own `package.json` and lockfile (same pattern as
   ADR 0005).
-- Secrets never appear in the file: they are set in Railway per environment and referenced with
-  `preserve()`. CI authenticates with project tokens scoped to one environment, stored as
-  GitHub environment secrets.
+- `infra/railway/package.json` declares `"type": "module"` (fact 10). The CI job that runs
+  `railway config plan` / `apply` sets up Node itself; jobs do not share machines.
+- The Railway CLI is pinned to an exact version (5.75.0), in CI and in `CONTRIBUTING.md`.
+- Secrets never appear in the file: they are set in Railway per environment. Every variable
+  managed in Railway, secret or not, is declared with `preserve()` (fact 11). CI authenticates
+  with project tokens scoped to one environment, stored as GitHub environment secrets.
 - Health check: `/api/health/` (readiness, checks the database). `healthcheck.railway.app` is in
   `DJANGO_ALLOWED_HOSTS`.
+
+### Application server
+
+- gunicorn runs a fixed number of workers, set explicitly per environment. It is never derived
+  from the CPU count, because containers see the host's 48 CPUs (fact 12).
 
 ### Static files
 
@@ -136,8 +166,11 @@ Rollback means deploying a previous digest. This is only safe because of the nex
 
 **Negative / trade-offs**
 
-- Cost: Railway Hobby is $5/month including $5 of usage; two always-on services are estimated
-  at $5–6/month in total. Neon Free and Cloudflare Free cost $0.
+- Cost: Railway Hobby is $5/month including $5 of usage, and production requires it (fact 9).
+  The estimate of $5–6/month assumed two always-on services; with staging asleep when idle it
+  is an upper bound. Neon Free and Cloudflare Free cost $0.
+- Staging sleeps when idle, so its first request after a quiet period waits for it to wake.
+- `railway config plan` does not catch a wrong region (fact 8); only the CI check does.
 - Neon Free compute scales to zero after 5 minutes; the first query after that takes a few
   hundred milliseconds. Free projects have no IP allow list.
 - Expand/contract migrations take two deploys for a destructive schema change.
@@ -146,8 +179,11 @@ Rollback means deploying a previous digest. This is only safe because of the nex
 
 ## To verify before implementation
 
-- [ ] Railway CLI applies `railway.ts` with the SDK installed in `infra/railway/`.
-- [ ] Railway deploys a Docker image from GHCR, and CI can set the image per environment.
+- [x] Railway CLI plans `railway.ts` with the SDK installed in `infra/railway/` (spike, fact 10).
+- [ ] `railway config apply` runs from CI with a project token scoped to one environment.
+- [x] A prebuilt image is promoted to a second environment without a rebuild (spike, fact 7).
+- [ ] The image comes from GHCR, and CI sets it per environment.
+- [ ] How CI reads a service's region from the deployment record.
 - [ ] How the pre-deploy command receives the direct database URL.
 - [ ] Which forwarded-protocol header Railway sets.
 - [ ] GitHub environment required reviewers on a public repository with one maintainer.
