@@ -3,7 +3,8 @@
 ## Workflow
 
 1. Once per clone, install the git hook: `make hooks` (needs
-   [uv](https://docs.astral.sh/uv/getting-started/installation/) on your machine).
+   [uv](https://docs.astral.sh/uv/getting-started/installation/) on your machine, in the range
+   set by `required-version` in `backend/pyproject.toml`).
 2. Create a branch from `main`: `feat/<short-description>`, `fix/...`, `chore/...`, `docs/...`,
    `test/...`.
 3. Make small, focused commits. The hook checks the staged files on every commit. If a hook fixes

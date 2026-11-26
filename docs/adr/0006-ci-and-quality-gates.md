@@ -2,6 +2,7 @@
 
 - **Status:** Accepted
 - **Date:** 2026-11-25
+- **Amended:** 2026-11-25 (uv version policy, noreply commit email; see "Amendments")
 - **Related:** ADR 0005 (frontend stack, TypeScript 5 in the isolated tool)
 
 ## Context
@@ -29,7 +30,7 @@ same commands. There are two jobs, which run in parallel and report separately:
 | Job (check name) | Runs              | Environment                                                  |
 | ---------------- | ----------------- | ------------------------------------------------------------ |
 | `make check`     | `make check`      | The same Docker Compose stack used locally                   |
-| `pre-commit`     | `make precommit`  | uv 0.11.32 (as in `backend/Dockerfile`), Node from `.nvmrc` |
+| `pre-commit`     | `make precommit`  | uv from `required-version` in `backend/pyproject.toml`, Node from `.nvmrc` |
 
 Tool caches (Ruff, pytest) are written to `/tmp` inside the container, never to `backend/`.
 
@@ -77,7 +78,9 @@ public. Before that change, the full git history was checked for committed secre
 - SHAs are harder to read than tags; the version comment must be kept in sync (Dependabot does it).
 - The `pre-commit` job duplicates part of `make check` (Ruff, Prettier, oxlint) in exchange for a
   clearer failure and coverage of the hygiene hooks.
-- The repository is public: the history, including author emails, is visible to anyone.
+- The repository is public: the history, including author emails, is visible to anyone. New
+  commits use the GitHub noreply address; older commits keep the original email, because
+  rewriting a protected `main` would cost more than it protects.
 
 ## Alternatives considered
 
@@ -90,3 +93,13 @@ public. Before that change, the full git history was checked for committed secre
 - **GitHub Pro to keep the repository private**: rejected; a public repository is free and the
   project is meant to be shown.
 - **Required approvals set to 1**: rejected; a single maintainer could never merge.
+
+## Amendments
+
+- **2026-11-25, uv version policy.** uv ran with a different version on each machine (0.11 in
+  Docker and CI, 0.12 on the host), and nothing updated the pins, because Dependabot does not
+  read `COPY --from=` or action inputs. Now `required-version` in `backend/pyproject.toml`
+  declares the allowed range (0.13.x), and every uv refuses to run outside it. The Dockerfile
+  pins the exact version on a `FROM` line that Dependabot updates. CI reads the range through
+  `setup-uv`'s `version-file`. The image build runs `uv sync --locked`, so a stale `uv.lock`
+  fails the build.
