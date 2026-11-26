@@ -1,4 +1,9 @@
 # syntax=docker/dockerfile:1
+
+# Pinned uv version for reproducible builds. A named stage (instead of
+# COPY --from=<image>) puts the pin on a FROM line, which Dependabot updates.
+FROM ghcr.io/astral-sh/uv:0.13.10 AS uv
+
 FROM python:3.13-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -9,8 +14,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/opt/venv/bin:$PATH" \
     PORT=8000
 
-# Pinned uv version for reproducible builds.
-COPY --from=ghcr.io/astral-sh/uv:0.13.10 /uv /uvx /bin/
+COPY --from=uv /uv /uvx /bin/
 
 WORKDIR /app
 
