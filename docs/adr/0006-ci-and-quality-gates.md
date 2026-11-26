@@ -103,3 +103,5 @@ public. Before that change, the full git history was checked for committed secre
   pins the exact version on a `FROM` line that Dependabot updates. CI reads the range through
   `setup-uv`'s `version-file`. The image build runs `uv sync --locked`, so a stale `uv.lock`
   fails the build.
+- **2026-11-25, commit email.** New commits use the GitHub noreply address, and GitHub blocks
+  pushes that would expose the personal email. Older commits are unchanged (see Consequences).
