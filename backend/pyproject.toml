@@ -2,9 +2,6 @@
 name = "accrubook-backend"
 version = "0.1.0"
 description = "Accrubook API: multi-tenant finance operations for consultancies."
-authors = [
-    { name = "oscaralfaguz47", email = "oscar.alfaguz47@gmail.com" }
-]
 requires-python = ">=3.13"
 dependencies = [
     "dj-database-url>=3.1.2",
@@ -16,12 +13,10 @@ dependencies = [
     "psycopg[binary]>=3.3.9",
 ]
 
-[project.scripts]
-accrubook-backend = "accrubook_backend:main"
-
-[build-system]
-requires = ["uv_build>=0.12.21,<0.14.0"]
-build-backend = "uv_build"
+[tool.uv]
+# Accrubook is an application, not a library: uv installs its dependencies only
+# and never builds or installs the project itself.
+package = false
 
 [dependency-groups]
 dev = [
