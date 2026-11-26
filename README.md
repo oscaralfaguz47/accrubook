@@ -25,7 +25,7 @@ Architecture decisions are recorded in [`docs/adr/`](docs/adr/).
 
 - [Docker](https://docs.docker.com/get-docker/) with Compose v2
 - `make`
-- Optional, for editor autocompletion only: [uv](https://docs.astral.sh/uv/getting-started/installation/)
+- [uv](https://docs.astral.sh/uv/getting-started/installation/) 0.13.x on the host, for the pre-commit hooks and editor autocompletion. Install it with the standalone installer. The allowed range is `required-version` in `backend/pyproject.toml`.
 
 You do **not** need Python or PostgreSQL installed locally. Everything runs in containers.
 

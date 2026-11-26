@@ -17,6 +17,10 @@ dependencies = [
 # Accrubook is an application, not a library: uv installs its dependencies only
 # and never builds or installs the project itself.
 package = false
+# Every machine (host, Docker, CI) must run uv 0.13.x. The Dockerfile pins the exact
+# version, and Dependabot updates it within this range. Moving to 0.14 is a deliberate
+# upgrade: change this range in the same pull request.
+required-version = ">=0.13.10,<0.14"
 
 [dependency-groups]
 dev = [
