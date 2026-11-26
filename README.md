@@ -12,7 +12,7 @@ Multi-tenant finance operations platform for consultancies: from approved hours 
 |---|---|
 | Backend | Python 3.13, Django 5.2 LTS |
 | Database | PostgreSQL 17 |
-| Frontend | React + TypeScript + Vite *(coming in Slice 0)* |
+| Frontend | React 19, TypeScript 7, Vite 8, TanStack Query 5 |
 | Tooling | uv (Python packages), Ruff (lint + format), pytest |
 | Local environment | Docker Compose |
 | Hosting | Railway (API), Neon (PostgreSQL), Cloudflare Pages (frontend) |
@@ -95,7 +95,7 @@ Python dependencies are managed with **uv**:
 
 - `backend/pyproject.toml` declares the direct dependencies and their allowed version ranges.
 - `backend/uv.lock` pins the **exact** version of every package, including transitive ones. It is committed, so every machine and every environment installs the same thing.
-- The Docker image installs strictly from the lockfile (`uv sync --frozen`). Production images skip development tools (`--no-dev`).
+- The Docker image installs strictly from the lockfile (`uv sync --locked`): the build fails if `uv.lock` is out of date with `pyproject.toml`. Production images skip development tools (`--no-dev`).
 
 To add or remove a package:
 
@@ -113,13 +113,18 @@ Always commit `pyproject.toml` and `uv.lock` together.
 
 ```
 accrubook/
+├── .github/                 # CI workflow and Dependabot
 ├── backend/                 # Django API
 │   ├── config/              # Settings, root URLs, WSGI/ASGI, env helpers
-│   ├── core/                # Cross-cutting endpoints (health check)
+│   ├── core/                # Cross-cutting code: health check, error handling
+│   ├── currencies/          # Currencies API
 │   ├── Dockerfile
+│   ├── openapi.yaml         # Generated API contract (make schema)
 │   ├── pyproject.toml       # Dependencies and tool configuration
 │   └── uv.lock              # Locked dependency versions
 ├── docs/adr/                # Architecture Decision Records
+├── frontend/                # React SPA (see Frontend below)
+├── .pre-commit-config.yaml  # Git pre-commit hooks
 ├── docker-compose.yml       # Local development environment
 ├── Makefile                 # Developer commands
 └── .env.example             # Environment variables template
