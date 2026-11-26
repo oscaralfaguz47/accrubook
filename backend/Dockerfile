@@ -18,14 +18,16 @@ WORKDIR /app
 # stays cached until pyproject.toml or uv.lock change.
 # The venv lives in /opt/venv, outside /app, so a bind mount of the source
 # code in development never hides it.
+# --locked fails the build when uv.lock is out of date with pyproject.toml,
+# so a stale lockfile can never reach CI or production.
 ARG INSTALL_DEV=false
 RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=pyproject.toml,target=pyproject.toml \
     --mount=type=bind,source=uv.lock,target=uv.lock \
     if [ "$INSTALL_DEV" = "true" ]; then \
-        uv sync --frozen --no-install-project; \
+        uv sync --locked --no-install-project; \
     else \
-        uv sync --frozen --no-install-project --no-dev; \
+        uv sync --locked --no-install-project --no-dev; \
     fi
 
 COPY . .
