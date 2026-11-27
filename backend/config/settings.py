@@ -95,6 +95,25 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# --- HTTPS and security headers ---------------------------------------------
+# Secure by default: with the variable unset, every HTTPS protection is on.
+# Local development over plain HTTP sets DJANGO_HTTPS_ONLY=false in .env.
+https_only = env_bool("DJANGO_HTTPS_ONLY", default=True)
+
+# Railway terminates TLS, forwards only HTTPS traffic and sets
+# X-Forwarded-Proto: https (ADR 0007). Never trust the header without that proxy.
+SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if https_only else None
+SECURE_SSL_REDIRECT = https_only
+SESSION_COOKIE_SECURE = https_only
+CSRF_COOKIE_SECURE = https_only
+# HSTS: browsers refuse plain HTTP to this host (and its subdomains) for a year.
+SECURE_HSTS_SECONDS = 60 * 60 * 24 * 365 if https_only else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = https_only
+
+# security.W021 (HSTS preload): joining the browser preload list is a decision
+# for the whole accrubook.com domain, made at the apex, not by the API.
+SILENCED_SYSTEM_CHECKS = ["security.W021"]
+
 
 # --- Django REST Framework (DRF) --------------------------------------------------
 
