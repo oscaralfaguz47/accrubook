@@ -82,3 +82,26 @@ jobs:
 
       - name: Run every hook on all files
         run: make precommit
+
+  # Builds the production backend image and smoke-tests it the way Railway runs it
+  # (ADR 0007: build once, promote the same image). The dev image used by `make check`
+  # never runs gunicorn, so only this job catches a broken production image.
+  image:
+    name: production image
+    needs: [check, pre-commit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      # Passed to make as data, never interpolated into a shell script.
+      IMAGE: accrubook-backend:${{ github.sha }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the production image
+        run: make image IMAGE="$IMAGE"
+
+      - name: Smoke-test the image
+        run: make smoke-image IMAGE="$IMAGE"
