@@ -2,6 +2,7 @@
 
 - **Status:** Proposed
 - **Date:** 2026-11-26
+- **Amended:** 2026-11-27 (step 5h: image registry, region check, uptime)
 - **Related:** ADR 0002 (hosting), ADR 0003 (sync Django), ADR 0005 (frontend, isolated tools),
   ADR 0006 (CI and quality gates)
 - **Spike:** Railway project `accrubook-spike`, deleted after the spike
@@ -41,6 +42,15 @@ A spike on Railway (project `accrubook-spike`) added six more facts:
 12. **Containers see the host's CPUs.** Inside a Railway container the CPU count is 48, so a
     value derived from it scales with the host, not with the service.
 
+Step 5h (image registry) added two more:
+
+13. **Private registry pulls need Railway Pro.** Railway's docs: "Private Docker registry
+    deployments require the Pro plan", with a classic personal access token for GHCR. Hobby
+    can pull public images only.
+14. **A package that a workflow creates in a public repository starts public.** A public package
+    can never be made private again; it can only be deleted (while no version has more than
+    5,000 downloads).
+
 ## Decision
 
 ### Two environments: staging and production
@@ -64,21 +74,41 @@ A spike on Railway (project `accrubook-spike`) added six more facts:
 - Railway and Neon run in the same region to keep query latency low. Neon regions cannot be
   changed after creation.
 - Each Railway service gets its region when it is created, because `railway config plan` ignores
-  region changes (fact 8). CI reads the region from the deployment record and fails when it is
-  not the one in the table.
+  region changes (fact 8). For go-live, the region is checked by hand when each service is
+  created and recorded in that pull request. A CI check that reads it from the deployment record
+  replaces the manual check later (#17).
 - Sleep is explicit per environment (fact 9): `sleepApplication` is `false` in production and
   `true` in staging. Production needs the Hobby plan, because Free forces every service to sleep.
 
 ### Build once, promote the same image
 
 1. A pull request merges to `main` only with CI green (ADR 0006).
-2. On `main`, CI builds the production backend image once and pushes it to GitHub Container
-   Registry, tagged with the commit SHA.
+2. On `main`, CI builds the production backend image once, smoke-tests it (`make smoke-image`:
+   gunicorn, production settings, a real PostgreSQL) and pushes that same image to GitHub
+   Container Registry, tagged with the full commit SHA and labeled with its source and revision.
+   It records the registry digest and signs a build provenance attestation for it. Pull requests
+   run the same build and smoke test without pushing.
 3. CI deploys that image to staging automatically.
 4. A `production` GitHub environment with a required reviewer gates the production job, which
    deploys **the same image digest**. Nothing is rebuilt for production.
 
 Rollback means deploying a previous digest. This is only safe because of the next rule.
+
+### Image registry
+
+- The image is `ghcr.io/oscaralfaguz47/accrubook/backend`, a **public** package (fact 14), so
+  Railway Hobby pulls it without credentials (fact 13). The repository is public, so the image
+  exposes no code that is not public already, and it contains no secrets.
+- Only the `publish image` job, which runs on `main` only, has `packages: write`. Pull request
+  jobs build and test with read-only permissions.
+- Deploys reference the digest, never a tag. There is no moving tag such as `latest` or `main`:
+  Railway watches image tags and offers (or, with automatic updates, applies) a redeploy when
+  a tag's digest changes.
+- Before promoting a digest, CI verifies its attestation with
+  `gh attestation verify --source-ref refs/heads/main`, so an image built from a pull request
+  cannot reach production.
+- If the repository becomes private: publish to a new private package, give Railway (Pro) a
+  read-only token, and delete the public package.
 
 ### Migrations
 
@@ -170,7 +200,11 @@ Rollback means deploying a previous digest. This is only safe because of the nex
   The estimate of $5–6/month assumed two always-on services; with staging asleep when idle it
   is an upper bound. Neon Free and Cloudflare Free cost $0.
 - Staging sleeps when idle, so its first request after a quiet period waits for it to wake.
-- `railway config plan` does not catch a wrong region (fact 8); only the CI check does.
+- `railway config plan` does not catch a wrong region (fact 8). Until the CI check exists (#17),
+  only the manual check at service creation does.
+- Railway runs health checks only during a deploy (fact 3). Until an external uptime monitor
+  exists (#16), nothing reports that production is down.
+- The image package is public for good (fact 14); going private means a new package.
 - Neon Free compute scales to zero after 5 minutes; the first query after that takes a few
   hundred milliseconds. Free projects have no IP allow list.
 - Expand/contract migrations take two deploys for a destructive schema change.
@@ -184,8 +218,11 @@ Rollback means deploying a previous digest. This is only safe because of the nex
 - [x] Railway CLI plans `railway.ts` with the SDK installed in `infra/railway/` (spike, fact 10).
 - [ ] `railway config apply` runs from CI with a project token scoped to one environment.
 - [x] A prebuilt image is promoted to a second environment without a rebuild (spike, fact 7).
-- [ ] The image comes from GHCR, and CI sets it per environment.
-- [ ] How CI reads a service's region from the deployment record.
+- [x] CI pushes the tested image to GHCR, tagged with the commit SHA, and records its digest;
+      the registry serves that digest to anonymous clients (PR #23).
+- [ ] CI sets the image per environment, by digest.
+- [ ] Railway accepts an image reference by digest (`image@sha256:…`).
+- [ ] How CI reads a service's region from the deployment record (#17; manual for go-live).
 - [ ] How the pre-deploy command receives the direct database URL.
 - [x] Which forwarded-protocol header Railway sets: `X-Forwarded-Proto: https` (Railway docs,
       "Specs and limits").
