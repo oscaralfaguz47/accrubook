@@ -36,6 +36,14 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 
+# Static files are collected at build time, so the image is complete and immutable
+# (ADR 0007). Settings fail fast without these two variables, and collectstatic uses
+# neither, so obvious placeholders stand in for this command only. Never pass a real
+# secret here: build commands are visible in the image history.
+RUN DJANGO_SECRET_KEY=collectstatic-placeholder \
+    DATABASE_URL=postgres://placeholder@localhost/placeholder \
+    python manage.py collectstatic --noinput
+
 # Never run the application as root.
 RUN useradd --create-home --uid 1000 app && chown -R app:app /app
 USER app
