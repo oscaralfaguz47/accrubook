@@ -118,6 +118,31 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = https_only
 SILENCED_SYSTEM_CHECKS = ["security.W021"]
 
 
+# --- Logging ----------------------------------------------------------------
+# Production: one JSON object per line on stdout (Railway marks stderr as error).
+# Local development sets DJANGO_LOG_JSON=false for readable text.
+log_json = env_bool("DJANGO_LOG_JSON", default=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "json": {"()": "core.json_logging.JsonFormatter"},
+        "text": {"format": "%(asctime)s %(levelname)s %(name)s %(message)s"},
+    },
+    "handlers": {
+        "stdout": {
+            "class": "logging.StreamHandler",
+            "stream": "ext://sys.stdout",
+            "formatter": "json" if log_json else "text",
+        },
+    },
+    "root": {"handlers": ["stdout"], "level": "INFO"},
+    # Drop Django's own console handler (stderr, DEBUG only) so nothing is logged
+    # twice; its records propagate to the root handler above.
+    "loggers": {"django": {"handlers": [], "level": "INFO"}},
+}
+
 # --- Cache ------------------------------------------------------------------
 # In memory, per gunicorn worker: throttle counters are approximate (one counter
 # per worker) and reset on every deploy. A shared cache is revisited in Slice 1.
