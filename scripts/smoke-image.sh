@@ -3,12 +3,22 @@
 #
 # Runs the image the way Railway does (gunicorn, production settings, HTTPS behind a
 # proxy) against a throwaway PostgreSQL, and fails unless /api/health/ reports "ok".
-# Usage: scripts/smoke-image.sh <image>   (or `make smoke-image`)
+# Usage: scripts/smoke-image.sh <image> <revision>   (or `make smoke-image`)
 set -euo pipefail
 
-image="${1:?usage: scripts/smoke-image.sh <image>}"
+image="${1:?usage: scripts/smoke-image.sh <image> <revision>}"
+revision="${2:?usage: scripts/smoke-image.sh <image> <revision>}"
 name="accrubook-smoke"
 port="8001" # 8000 is the development backend from docker-compose.yml
+
+# The image must say which commit it was built from (OCI label), so an image in the
+# registry can always be traced back to its source. Checked before any container starts.
+label="$(docker image inspect \
+  --format '{{ index .Config.Labels "org.opencontainers.image.revision" }}' "$image")"
+if [ "$label" != "$revision" ]; then
+  echo "Revision label is '$label', expected '$revision'." >&2
+  exit 1
+fi
 
 cleanup() {
   local status=$?

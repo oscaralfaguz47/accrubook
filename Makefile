@@ -81,12 +81,20 @@ check: lint test frontend-check frontend-test ## Run everything CI runs (backend
 # --- Production image -------------------------------------------------------
 
 IMAGE ?= accrubook-backend:local
+# Commit the image is built from, stored as an OCI label so any image in the registry
+# can be traced back to its source. CI checks out a clean tree, so HEAD is exact there.
+REVISION ?= $(shell git rev-parse HEAD)
+IMAGE_SOURCE := https://github.com/oscaralfaguz47/accrubook
 
 image: ## Build the production backend image (no dev dependencies)
-	docker build --tag $(IMAGE) backend
+	docker build --tag $(IMAGE) \
+		--label org.opencontainers.image.source=$(IMAGE_SOURCE) \
+		--label org.opencontainers.image.revision=$(REVISION) \
+		--label "org.opencontainers.image.description=Accrubook backend API (Django, gunicorn)" \
+	backend
 
 smoke-image: ## Run the production image against a throwaway PostgreSQL and check /api/health/
-	./scripts/smoke-image.sh $(IMAGE)
+	./scripts/smoke-image.sh $(IMAGE) $(REVISION)
 
 # --- Frontend ---------------------------------------------------------------
 
