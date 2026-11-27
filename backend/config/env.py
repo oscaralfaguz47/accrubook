@@ -1,6 +1,7 @@
 """Typed helpers for reading configuration from environment variables."""
 
 import os
+import re
 
 
 def env_str(name: str, default: str | None = None) -> str:
@@ -31,6 +32,20 @@ def env_bool(name: str, default: bool = False) -> bool:
     raise RuntimeError(
         f"Invalid boolean in environment variable {name} (use true/false, yes/no, on/off or 1/0)"
     )
+
+
+def env_positive_int(name: str) -> int:
+    """Return a required whole number of 1 or more.
+
+    Anything else fails fast, including values int() would accept ("+2", "1_000"):
+    a typo must not silently change how the service runs.
+    """
+    value = env_str(name).strip()
+    if not re.fullmatch(r"[0-9]+", value) or int(value) < 1:
+        raise RuntimeError(
+            f"Invalid value in environment variable {name} (use a whole number of 1 or more)"
+        )
+    return int(value)
 
 
 def env_list(name: str, default: str = "") -> list[str]:
