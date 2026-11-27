@@ -19,6 +19,8 @@
 | Your machine         | pre-commit hooks on staged files (hygiene, Ruff, Prettier, oxlint) | `git commit`   |
 | CI, `make check` job | Backend lint + tests, frontend check + tests             | Every pull request and push to `main` |
 | CI, `pre-commit` job | Every hook on all files (`make precommit`)               | Every pull request and push to `main` |
+| CI, `production image` job | Build the production image and smoke-test it (`make image`, `make smoke-image`) | Every pull request |
+| CI, `publish image` job | The same build and smoke test, then push to GHCR, record the digest and attest provenance | Every push to `main` |
 
 Don't use `git commit --no-verify` to get past a failing hook. CI runs the same hooks, and the
 pull request can't be merged until they pass. To run every hook on all files locally:
@@ -30,7 +32,8 @@ A repository ruleset protects `main` (Settings → Rules → Rulesets → `main`
 
 - Changes arrive only through pull requests. Required approvals are 0 because the project has one
   maintainer, and GitHub doesn't let authors approve their own pull requests.
-- The `make check` and `pre-commit` checks must pass on a branch that is up to date with `main`.
+- The `make check`, `pre-commit` and `production image` checks must pass on a branch that is up to
+  date with `main`.
 - Force pushes and deleting the branch are blocked. Nobody can bypass the rule, admins included.
 
 **Renaming a CI job:** the ruleset waits for a check with the job's exact `name:` in

@@ -1,6 +1,8 @@
-# Runs the same quality gate as `make check` on every pull request and on main.
-# The Makefile stays the single source of commands: this file only prepares a
-# clean machine and calls make.
+# Runs the same quality gate as `make check` on every pull request and on main,
+# then builds and smoke-tests the production image; on main it also publishes that
+# image to GHCR. The Makefile stays the single source of commands: this file only
+# prepares a clean machine and calls make. Publishing (registry login and push) is
+# CI-only on purpose, so it lives here and not in the Makefile.
 name: CI
 
 on:
@@ -82,3 +84,93 @@ jobs:
 
       - name: Run every hook on all files
         run: make precommit
+
+  # Builds the production backend image and smoke-tests it the way Railway runs it
+  # (ADR 0007: build once, promote the same image). The dev image used by `make check`
+  # never runs gunicorn, so only this job catches a broken production image.
+  image:
+    name: production image
+    # On main, `publish image` builds and tests the same way before pushing.
+    if: github.event_name == 'pull_request'
+    needs: [check, pre-commit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      # Passed to make as data, never interpolated into a shell script.
+      IMAGE: accrubook-backend:${{ github.sha }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the production image
+        run: make image IMAGE="$IMAGE"
+
+      - name: Smoke-test the image
+        run: make smoke-image IMAGE="$IMAGE"
+
+  # On main only: builds the production image, smoke-tests it, and pushes that same
+  # image to GHCR, tagged with the full commit SHA (ADR 0007: build once, promote the
+  # same image). It is a separate job because permissions cannot depend on the event:
+  # only this job, which never runs on pull requests, gets `packages: write`.
+  publish:
+    name: publish image
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [check, pre-commit]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      packages: write
+      # Sign the provenance attestation (OIDC identity of this run) and store it.
+      id-token: write
+      attestations: write
+    outputs:
+      # Registry digest of the pushed image: deploys use it, never the tag (ADR 0007).
+      digest: ${{ steps.push.outputs.digest }}
+    env:
+      IMAGE: ghcr.io/${{ github.repository }}/backend:${{ github.sha }}
+    steps:
+      - name: Check out the code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Build the production image
+        run: make image IMAGE="$IMAGE"
+
+      - name: Smoke-test the image
+        run: make smoke-image IMAGE="$IMAGE"
+
+      - name: Log in to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: echo "$GHCR_TOKEN" | docker login ghcr.io --username "$GITHUB_ACTOR" --password-stdin
+
+      # Pushes the image that was just tested (never a rebuild), then reads back the
+      # digest the registry serves for that tag.
+      - name: Push the tested image
+        id: push
+        run: |
+          docker push "$IMAGE"
+          digest="$(docker buildx imagetools inspect "$IMAGE" --format '{{ .Manifest.Digest }}')"
+          if [[ ! "$digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "Could not read the pushed digest (got '$digest')." >&2
+            exit 1
+          fi
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+          echo "Pushed \`${IMAGE%:*}@$digest\` (revision \`$GITHUB_SHA\`)" >> "$GITHUB_STEP_SUMMARY"
+
+      # Signed SLSA build provenance for the pushed digest, stored with the image in
+      # GHCR. Verify with: gh attestation verify oci://<image>@<digest> -R <owner>/<repo>
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-name: ghcr.io/${{ github.repository }}/backend
+          subject-digest: ${{ steps.push.outputs.digest }}
+          push-to-registry: true
+
+      - name: Log out of GHCR
+        if: always()
+        run: docker logout ghcr.io
