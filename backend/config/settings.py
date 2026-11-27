@@ -37,6 +37,9 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    # Right after SecurityMiddleware (HTTPS redirect and HSTS still apply) and before
+    # everything else, so a static file never touches sessions, CSRF or auth.
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -91,9 +94,16 @@ USE_I18N = True
 USE_TZ = True
 
 # --- Static files -----------------------------------------------------------
-
+# The app serves its own static files with WhiteNoise: no web server in front on
+# Railway (ADR 0007). collectstatic runs at image build time and writes each file
+# under a content-hashed name plus a gzip copy, so browsers can cache it forever.
+# With DEBUG=True, Django skips the manifest and runserver works without collectstatic.
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
+}
 
 # --- HTTPS and security headers ---------------------------------------------
 # Secure by default: with the variable unset, every HTTPS protection is on.
