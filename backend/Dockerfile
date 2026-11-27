@@ -50,5 +50,6 @@ USER app
 
 EXPOSE 8000
 
-# Gunicorn binds to 0.0.0.0:$PORT when PORT is set (the hosting platform injects it).
-CMD ["gunicorn", "config.wsgi:application", "--workers", "2", "--access-logfile", "-"]
+# Gunicorn binds to 0.0.0.0:$PORT when PORT is set (the hosting platform injects it)
+# and reads the rest of its settings from gunicorn.conf.py at start time.
+CMD ["gunicorn", "config.wsgi:application"]
