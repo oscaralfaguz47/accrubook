@@ -6,7 +6,7 @@ FRONTEND := npm --prefix frontend
 OPENAPI_TOOL := npm --prefix frontend/tools/openapi-typescript
 PRE_COMMIT := uv run --project backend --frozen pre-commit
 
-.PHONY: help setup hooks precommit up down restart logs ps migrate makemigrations schema api-types superuser shell test lint format check frontend-install frontend-dev frontend-check frontend-test
+.PHONY: help setup hooks precommit up down restart logs ps migrate makemigrations schema api-types superuser shell test lint format check image smoke-image frontend-install frontend-dev frontend-check frontend-test
 
 
 help: ## Show available commands
@@ -77,6 +77,16 @@ precommit: ## Run every pre-commit hook on all files (not just staged ones)
 	$(PRE_COMMIT) run --all-files
 
 check: lint test frontend-check frontend-test ## Run everything CI runs (backend + frontend)
+
+# --- Production image -------------------------------------------------------
+
+IMAGE ?= accrubook-backend:local
+
+image: ## Build the production backend image (no dev dependencies)
+	docker build --tag $(IMAGE) backend
+
+smoke-image: ## Run the production image against a throwaway PostgreSQL and check /api/health/
+	./scripts/smoke-image.sh $(IMAGE)
 
 # --- Frontend ---------------------------------------------------------------
 
