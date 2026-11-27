@@ -23,3 +23,10 @@ def test_hashed_files_are_served_compressed_and_cached_forever(client):
     assert response["Cache-Control"] == "max-age=315360000, public, immutable"
     assert response["Content-Encoding"] == "gzip"
     assert response["Vary"] == "Accept-Encoding"
+
+
+def test_static_files_allow_no_cross_origin_reads(client):
+    response = client.get(static(ADMIN_CSS), HTTP_ORIGIN="https://other.example", secure=True)
+
+    assert response.status_code == 200
+    assert "Access-Control-Allow-Origin" not in response

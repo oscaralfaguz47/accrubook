@@ -104,6 +104,10 @@ STORAGES = {
     "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
     "staticfiles": {"BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage"},
 }
+# WhiteNoise sends "Access-Control-Allow-Origin: *" on every file by default. Nothing
+# cross-origin loads these files (the SPA ships its own assets), so the API's CORS
+# rule applies here too: no origins unless listed.
+WHITENOISE_ALLOW_ALL_ORIGINS = False
 
 # --- HTTPS and security headers ---------------------------------------------
 # Secure by default: with the variable unset, every HTTPS protection is on.
