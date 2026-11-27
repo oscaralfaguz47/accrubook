@@ -134,6 +134,8 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "core.errors.problem_details_exception_handler",
 }
 
+swagger_ui_dist = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.35.1"
+
 SPECTACULAR_SETTINGS = {
     "TITLE": "Accrubook API",
     "DESCRIPTION": "Finance operations API for professional services firms.",
@@ -142,7 +144,14 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     # Strip the version prefix so tags/operation IDs read "currencies", not "v1".
     "SCHEMA_PATH_PREFIX": r"/api/v[0-9]+",
+    # Pinned instead of @latest, so a CDN release can't change the docs page silently.
+    "SWAGGER_UI_DIST": swagger_ui_dist,
+    "SWAGGER_UI_FAVICON_HREF": f"{swagger_ui_dist}/favicon-32x32.png",
 }
+
+# The schema and Swagger UI are public pages (a full map of the API), so they are
+# off unless enabled: local development and staging only (ADR 0007).
+API_DOCS_ENABLED = env_bool("DJANGO_API_DOCS_ENABLED", default=False)
 
 
 # --- CORS -------------------------------------------------------------------
