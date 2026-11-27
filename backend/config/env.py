@@ -11,11 +11,26 @@ def env_str(name: str, default: str | None = None) -> str:
     return value
 
 
+_TRUE_VALUES = {"1", "true", "yes", "on"}
+_FALSE_VALUES = {"0", "false", "no", "off"}
+
+
 def env_bool(name: str, default: bool = False) -> bool:
+    """Return a boolean variable, or ``default`` when it is unset.
+
+    Any other value fails fast: a typo must not silently switch a setting off.
+    """
     value = os.environ.get(name)
     if value is None:
         return default
-    return value.strip().lower() in {"1", "true", "yes", "on"}
+    normalized = value.strip().lower()
+    if normalized in _TRUE_VALUES:
+        return True
+    if normalized in _FALSE_VALUES:
+        return False
+    raise RuntimeError(
+        f"Invalid boolean in environment variable {name} (use true/false, yes/no, on/off or 1/0)"
+    )
 
 
 def env_list(name: str, default: str = "") -> list[str]:
