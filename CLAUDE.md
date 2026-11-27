@@ -10,6 +10,7 @@ payment runs, accounts payable and the ledger. Monorepo with a Django REST API a
   tool pinned to TypeScript 5 (see ADR 0005).
 - `docs/adr/`: Architecture Decision Records.
 - `.github/`: CI workflow (`workflows/ci.yml`) and `dependabot.yml`.
+- `scripts/`: shell scripts called by the Makefile (`smoke-image.sh`).
 - Root: `docker-compose.yml`, `Makefile`, `.pre-commit-config.yaml`, `README.md`, `CONTRIBUTING.md`.
 
 ## Commands
@@ -19,6 +20,8 @@ lists every target.
 
 - `make setup`, `make up`, `make down`, `make restart`, `make logs`
 - `make check`: everything CI runs (backend lint + tests, frontend check + tests)
+- `make image`: build the production image; `make smoke-image`: run it against a throwaway
+  PostgreSQL and check `/api/health/` and its revision label
 - `make format`: auto-fix lint and formatting (backend + frontend)
 - `make hooks`: install the git pre-commit hook; `make precommit`: run every hook on all files
 - `make makemigrations`, `make migrate`, `make schema`, `make api-types`
@@ -93,8 +96,11 @@ is bind-mounted at `/app`. The frontend runs on the host with Node 26 (`frontend
 
 - pre-commit runs fast checks on staged files: hygiene hooks, Ruff, Prettier and oxlint, using the
   tool versions locked in `uv.lock` and `package-lock.json`. Type checks and tests stay in CI.
-- CI (`.github/workflows/ci.yml`) runs `make check` on every pull request and on `main`, with the
-  same Docker Compose stack used locally.
+- CI (`.github/workflows/ci.yml`) runs `make check` and `pre-commit` on every pull request and on
+  `main`, with the same Docker Compose stack used locally. Then pull requests build and smoke-test
+  the production image (`production image`). On `main`, `publish image` does the same, pushes that
+  image to GHCR tagged with the commit SHA, records its digest and attests its provenance
+  (ADR 0007). Only `publish image` has `packages: write`.
 - GitHub Actions and pre-commit hook repositories are pinned to full commit SHAs with a
   `# vX.Y.Z` comment. Dependabot proposes updates weekly with a 7-day cooldown; deliberate upgrades
   (Python minor and major, Django and PostgreSQL major, `@types/node` major, TypeScript major in

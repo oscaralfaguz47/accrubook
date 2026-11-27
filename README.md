@@ -88,6 +88,8 @@ Run `make help` to see them all.
 | `make lint` | Check linting and formatting |
 | `make format` | Auto-fix lint issues and format code |
 | `make check` | Run everything CI runs (lint + tests) |
+| `make image` | Build the production image (no dev dependencies) |
+| `make smoke-image` | Run the production image against a throwaway PostgreSQL and check `/api/health/` |
 
 ## Managing dependencies
 
@@ -124,6 +126,7 @@ accrubook/
 │   └── uv.lock              # Locked dependency versions
 ├── docs/adr/                # Architecture Decision Records
 ├── frontend/                # React SPA (see Frontend below)
+├── scripts/                 # Shell scripts called by the Makefile
 ├── .pre-commit-config.yaml  # Git pre-commit hooks
 ├── docker-compose.yml       # Local development environment
 ├── Makefile                 # Developer commands
