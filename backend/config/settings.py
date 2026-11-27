@@ -103,6 +103,9 @@ https_only = env_bool("DJANGO_HTTPS_ONLY", default=True)
 # Railway terminates TLS, forwards only HTTPS traffic and sets
 # X-Forwarded-Proto: https (ADR 0007). Never trust the header without that proxy.
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https") if https_only else None
+# Railway's edge sets X-Real-IP to the client's address (ADR 0007). Read by
+# core.throttling; never trusted without the proxy.
+CLIENT_IP_HEADER = "HTTP_X_REAL_IP" if https_only else None
 SECURE_SSL_REDIRECT = https_only
 SESSION_COOKIE_SECURE = https_only
 CSRF_COOKIE_SECURE = https_only
@@ -114,6 +117,11 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = https_only
 # for the whole accrubook.com domain, made at the apex, not by the API.
 SILENCED_SYSTEM_CHECKS = ["security.W021"]
 
+
+# --- Cache ------------------------------------------------------------------
+# In memory, per gunicorn worker: throttle counters are approximate (one counter
+# per worker) and reset on every deploy. A shared cache is revisited in Slice 1.
+CACHES = {"default": {"BACKEND": "django.core.cache.backends.locmem.LocMemCache"}}
 
 # --- Django REST Framework (DRF) --------------------------------------------------
 
@@ -132,7 +140,11 @@ REST_FRAMEWORK = {
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Every API error uses RFC 9457 Problem Details (see core/errors.py).
     "EXCEPTION_HANDLER": "core.errors.problem_details_exception_handler",
+    # Coarse abuse protection per client IP; approximate, see CACHES.
+    "DEFAULT_THROTTLE_CLASSES": ["core.throttling.ClientIPAnonRateThrottle"],
+    "DEFAULT_THROTTLE_RATES": {"anon": "60/minute"},
 }
+
 
 swagger_ui_dist = "https://cdn.jsdelivr.net/npm/swagger-ui-dist@5.35.1"
 
