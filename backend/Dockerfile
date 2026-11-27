@@ -36,11 +36,20 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 
+# Static files are collected at build time, so the image is complete and immutable
+# (ADR 0007). Settings fail fast without these two variables, and collectstatic uses
+# neither, so obvious placeholders stand in for this command only. Never pass a real
+# secret here: build commands are visible in the image history.
+RUN DJANGO_SECRET_KEY=collectstatic-placeholder \
+    DATABASE_URL=postgres://placeholder@localhost/placeholder \
+    python manage.py collectstatic --noinput
+
 # Never run the application as root.
 RUN useradd --create-home --uid 1000 app && chown -R app:app /app
 USER app
 
 EXPOSE 8000
 
-# Gunicorn binds to 0.0.0.0:$PORT when PORT is set (the hosting platform injects it).
-CMD ["gunicorn", "config.wsgi:application", "--workers", "2", "--access-logfile", "-"]
+# Gunicorn binds to 0.0.0.0:$PORT when PORT is set (the hosting platform injects it)
+# and reads the rest of its settings from gunicorn.conf.py at start time.
+CMD ["gunicorn", "config.wsgi:application"]

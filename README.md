@@ -141,6 +141,8 @@ All configuration comes from environment variables ([12-factor](https://12factor
 | `ports are not available ... 5432` | Another PostgreSQL is using the port. Set `POSTGRES_HOST_PORT=5433` in `.env` and run `make restart` |
 | `Makefile: *** missing separator` | Makefile recipes must be indented with tabs: `sed -i 's/^    /\t/' Makefile` |
 | `Missing required environment variable: ...` | Your `.env` is missing that variable. Compare it with `.env.example` |
+| `Missing staticfiles manifest entry for '...'` (500 on an admin page) | The image was built without `collectstatic`, or `STATIC_ROOT` is empty. Rebuild the image. Tests get the manifest from the root `conftest.py` |
+| `UserWarning: No directory at: /app/staticfiles/` | Expected in local development: the source bind mount hides the image's `staticfiles/`, and WhiteNoise serves the files from the apps instead. Nothing to fix |
 
 ## Roadmap
 

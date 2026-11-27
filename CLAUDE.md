@@ -52,6 +52,21 @@ is bind-mounted at `/app`. The frontend runs on the host with Node 26 (`frontend
 - Multi-tenancy (from Slice 1): shared schema + `tenant_id` + PostgreSQL row-level security.
   Requests for another tenant's data return 404, not 403.
 
+## Production runtime (ADR 0007)
+
+- One image runs in every environment; environments differ only in variables, all listed in
+  `.env.example`. Secure defaults: `DJANGO_HTTPS_ONLY` is on and `DJANGO_API_DOCS_ENABLED` is off
+  unless set; local development sets both in `.env`.
+- gunicorn reads `backend/gunicorn.conf.py` at start time. `GUNICORN_WORKERS` is required and fixed
+  per environment, never derived from the CPU count (containers see the host's CPUs).
+- Logs: one JSON object per line on stdout, from Django and gunicorn alike (`DJANGO_LOG_JSON`,
+  default on). Nothing goes to stderr, which Railway marks as error.
+- Static files: WhiteNoise with `CompressedManifestStaticFilesStorage`; `collectstatic` runs at
+  image build time. Tests collect once per session (root `conftest.py`), so pages that use
+  `{% static %}` need no extra setup.
+- Anonymous API requests are throttled per client IP. The IP comes from Railway's `X-Real-IP`
+  only when `DJANGO_HTTPS_ONLY` is on; counters live in each worker's memory until Slice 1.
+
 ## API conventions (ADR 0004)
 
 - Base path `/api/v1/`; plural, kebab-case resource names with a trailing slash; JSON only.

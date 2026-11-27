@@ -176,6 +176,8 @@ Rollback means deploying a previous digest. This is only safe because of the nex
 - Expand/contract migrations take two deploys for a destructive schema change.
 - One more isolated Node tool (`infra/railway/`) to keep updated with Dependabot.
 - Hobby keeps 7 days of logs.
+- Throttle counters live in each gunicorn worker's memory: limits are approximate (up to one
+  counter per worker) and reset on deploy. Revisit with a shared cache in Slice 1.
 
 ## To verify before implementation
 
@@ -185,7 +187,10 @@ Rollback means deploying a previous digest. This is only safe because of the nex
 - [ ] The image comes from GHCR, and CI sets it per environment.
 - [ ] How CI reads a service's region from the deployment record.
 - [ ] How the pre-deploy command receives the direct database URL.
-- [ ] Which forwarded-protocol header Railway sets.
+- [x] Which forwarded-protocol header Railway sets: `X-Forwarded-Proto: https` (Railway docs,
+      "Specs and limits").
+- [ ] Railway sets `X-Real-IP` to the client address and overwrites a client-sent value
+      (test on staging).
 - [ ] GitHub environment required reviewers on a public repository with one maintainer.
 - [ ] The base image has the CA bundle for `verify-full`; the bundled libpq version.
 - [ ] Pages applies preview variables at build time (test build).
